@@ -1,0 +1,164 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Upload Receipt{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card shadow-sm border-0 rounded-lg">
+                <div class="card-header bg-primary text-white py-3">
+                    <h3 class="card-title mb-0 h5"><i class="fas fa-receipt me-2"></i>Upload Receipt</h3>
+                </div>
+                <div class="card-body p-4">
+                    <form method="post" enctype="multipart/form-data">
+                        {% csrf_token %}
+                        
+                        <div class="text-center mb-4 upload-zone" id="drop-area">
+                            <div id="preview-container" class="mb-3 d-none">
+                                <img id="receipt-preview" class="img-fluid rounded shadow-sm" style="max-height: 250px" alt="Receipt preview">
+                            </div>
+                            
+                            <div id="upload-prompt" class="py-5 border border-dashed rounded bg-light">
+                                <i class="fas fa-cloud-upload-alt fa-3x text-primary mb-3"></i>
+                                <p class="mb-1">Drag & drop your receipt image here</p>
+                                <p class="text-muted small mb-3">or</p>
+                                <label for="{{ form.image.id_for_label }}" class="btn btn-outline-primary">
+                                    <i class="fas fa-file-image me-2"></i>Browse Files
+                                </label>
+                                <div class="d-none">{{ form.image }}</div>
+                            </div>
+                        </div>
+                        
+                        {% if form.errors %}
+                            <div class="alert alert-danger">
+                                <i class="fas fa-exclamation-circle me-2"></i>Please correct the errors below.
+                            </div>
+                        {% endif %}
+                        
+                        <div class="text-muted small mb-4">
+                            <i class="fas fa-info-circle me-1"></i> Supported formats: JPEG, PNG, GIF, BMP
+                        </div>
+                        
+                        <div class="d-flex justify-content-end">
+                            <a href="{% url 'expenses:receipt_list' %}" class="btn btn-outline-secondary me-2">
+                                <i class="fas fa-times me-1"></i>Cancel
+                            </a>
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-upload me-1"></i>Upload Receipt
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+    .border-dashed {
+        border-style: dashed !important;
+    }
+    
+    #drop-area {
+        transition: all 0.3s ease;
+    }
+    
+    #drop-area.highlight {
+        background-color: #f0f7ff;
+        border-color: #0d6efd;
+    }
+    
+    #upload-prompt {
+        cursor: pointer;
+        transition: all 0.2s ease;
+    }
+    
+    #upload-prompt:hover {
+        background-color: #e9ecef !important;
+    }
+</style>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // File preview functionality
+    const imageInput = document.getElementById('{{ form.image.id_for_label }}');
+    const previewContainer = document.getElementById('preview-container');
+    const imagePreview = document.getElementById('receipt-preview');
+    const uploadPrompt = document.getElementById('upload-prompt');
+    const dropArea = document.getElementById('drop-area');
+    
+    // Handle file selection
+    imageInput.addEventListener('change', function() {
+        if (this.files && this.files[0]) {
+            const file = this.files[0];
+            
+            // Check if it's an image
+            if (!file.type.match('image.*')) {
+                alert('Please select an image file (JPEG, PNG, GIF, BMP)');
+                return;
+            }
+            
+            // Display preview
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                imagePreview.src = e.target.result;
+                previewContainer.classList.remove('d-none');
+                uploadPrompt.classList.add('d-none');
+            }
+            reader.readAsDataURL(file);
+        }
+    });
+    
+    // Drag and drop functionality
+    ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+        dropArea.addEventListener(eventName, preventDefaults, false);
+    });
+    
+    function preventDefaults(e) {
+        e.preventDefault();
+        e.stopPropagation();
+    }
+    
+    ['dragenter', 'dragover'].forEach(eventName => {
+        dropArea.addEventListener(eventName, highlight, false);
+    });
+    
+    ['dragleave', 'drop'].forEach(eventName => {
+        dropArea.addEventListener(eventName, unhighlight, false);
+    });
+    
+    function highlight() {
+        dropArea.classList.add('highlight');
+    }
+    
+    function unhighlight() {
+        dropArea.classList.remove('highlight');
+    }
+    
+    dropArea.addEventListener('drop', handleDrop, false);
+    
+    function handleDrop(e) {
+        const dt = e.dataTransfer;
+        const files = dt.files;
+        
+        if (files && files[0]) {
+            // Update the file input
+            imageInput.files = files;
+            
+            // Trigger the change event
+            const event = new Event('change');
+            imageInput.dispatchEvent(event);
+        }
+    }
+    
+    // Make the upload prompt clickable
+    uploadPrompt.addEventListener('click', function() {
+        imageInput.click();
+    });
+</script>
+{% endblock %} 

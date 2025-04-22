@@ -1,0 +1,157 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}{{ notification.title }} | Expense Tracker{% endblock title %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-8 offset-md-2">
+        <div class="mb-4">
+            <a href="{% url 'expenses:user_notifications' %}" class="btn btn-outline-secondary">
+                <i class="fas fa-arrow-left"></i> Back to Notifications
+            </a>
+        </div>
+        
+        <div class="card shadow-sm">
+            <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+                <h4 class="mb-0">{{ notification.title }}</h4>
+                <span class="badge badge-light">{{ notification.created_at|date:"M d, Y" }} at {{ notification.created_at|time:"H:i" }}</span>
+            </div>
+            <div class="card-body">
+                <div class="notification-content p-3">
+                    <p class="lead">{{ notification.message }}</p>
+                </div>
+                
+                {% if notification.title|lower == 'new expense added' %}
+                    <div class="mt-4 p-3 bg-light rounded">
+                        <h5 class="mb-3">Related Actions:</h5>
+                        <div class="d-flex">
+                            <a href="{% url 'expenses:home' %}" class="btn btn-outline-primary mr-2">
+                                <i class="fas fa-list"></i> View All Expenses
+                            </a>
+                            <a href="{% url 'expenses:charts' %}" class="btn btn-outline-success">
+                                <i class="fas fa-chart-pie"></i> View Charts
+                            </a>
+                        </div>
+                    </div>
+                {% elif 'budget' in notification.title|lower %}
+                    <div class="mt-4 p-3 bg-light rounded">
+                        <h5 class="mb-3">Budget Management:</h5>
+                        <div class="d-flex">
+                            <a href="{% url 'expenses:charts' %}" class="btn btn-outline-warning mr-2">
+                                <i class="fas fa-chart-line"></i> View Spending Trends
+                            </a>
+                            {% if 'exceeded' in notification.message|lower %}
+                            <a href="{% url 'expenses:update_budget' %}" class="btn btn-outline-danger">
+                                <i class="fas fa-edit"></i> Update Budget
+                            </a>
+                            {% endif %}
+                        </div>
+                    </div>
+                {% endif %}
+            </div>
+            <div class="card-footer text-muted">
+                <small>
+                    <i class="fas fa-info-circle"></i> 
+                    This notification has been marked as read.
+                </small>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .notification-content {
+        min-height: 100px;
+        border-left: 4px solid #007bff;
+        background-color: rgba(0, 123, 255, 0.05);
+    }
+    
+    /* Enhanced button styling */
+    .btn {
+        font-weight: 500;
+        border-radius: 4px;
+        padding: 0.375rem 0.75rem;
+        display: inline-block;
+        text-align: center;
+        vertical-align: middle;
+        cursor: pointer;
+    }
+    
+    .btn-outline-secondary {
+        color: #6c757d !important;
+        border-color: #6c757d;
+        background-color: white;
+    }
+    
+    .btn-outline-secondary:hover {
+        color: white !important;
+        background-color: #6c757d;
+    }
+    
+    .btn-outline-primary {
+        color: #007bff !important;
+        border-color: #007bff;
+        background-color: white;
+    }
+    
+    .btn-outline-primary:hover {
+        color: white !important;
+        background-color: #007bff;
+    }
+    
+    .btn-outline-success {
+        color: #28a745 !important;
+        border-color: #28a745;
+        background-color: white;
+    }
+    
+    .btn-outline-success:hover {
+        color: white !important;
+        background-color: #28a745;
+    }
+    
+    .btn-outline-warning {
+        color: #ffc107 !important;
+        border-color: #ffc107;
+        background-color: white;
+    }
+    
+    .btn-outline-warning:hover {
+        color: #212529 !important;
+        background-color: #ffc107;
+    }
+    
+    .btn-outline-danger {
+        color: #dc3545 !important;
+        border-color: #dc3545;
+        background-color: white;
+    }
+    
+    .btn-outline-danger:hover {
+        color: white !important;
+        background-color: #dc3545;
+    }
+    
+    .card {
+        border: none;
+        box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
+    }
+    
+    .card-header.bg-primary {
+        background-color: #007bff !important;
+    }
+    
+    /* Make the flexbox layout work better on mobile */
+    @media (max-width: 767.98px) {
+        .d-flex {
+            flex-direction: column;
+        }
+        
+        .d-flex .btn {
+            margin-right: 0 !important;
+            margin-bottom: 0.5rem;
+        }
+    }
+</style>
+{% endblock content %} 

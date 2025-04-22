@@ -1,0 +1,316 @@
+<!DOCTYPE html>
+{% load expense_filters %}
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>Expense Report</title>
+    <style>
+        @page {
+            size: letter portrait;
+            margin: 2cm;
+        }
+        body {
+            font-family: Arial, sans-serif;
+            color: #333;
+            line-height: 1.5;
+        }
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+            border-bottom: 2px solid #007bff;
+            padding-bottom: 10px;
+        }
+        .header h1 {
+            color: #007bff;
+            margin-bottom: 5px;
+        }
+        .meta-info {
+            margin-bottom: 20px;
+            font-size: 14px;
+        }
+        .section {
+            margin-bottom: 30px;
+        }
+        .section-title {
+            background-color: #f5f5f5;
+            padding: 5px 10px;
+            font-size: 18px;
+            margin-bottom: 15px;
+            border-left: 4px solid #007bff;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 20px;
+            font-size: 12px;
+        }
+        table, th, td {
+            border: 1px solid #ddd;
+        }
+        th {
+            background-color: #f5f5f5;
+            color: #333;
+            padding: 8px;
+            text-align: left;
+        }
+        td {
+            padding: 8px;
+        }
+        tr:nth-child(even) {
+            background-color: #f9f9f9;
+        }
+        .summary-box {
+            border: 1px solid #ddd;
+            padding: 15px;
+            margin-bottom: 20px;
+            background-color: #f9f9f9;
+        }
+        .summary-item {
+            margin-bottom: 10px;
+        }
+        .summary-label {
+            font-weight: bold;
+            display: inline-block;
+            width: 60%;
+        }
+        .footer {
+            text-align: center;
+            font-size: 12px;
+            color: #777;
+            margin-top: 30px;
+            border-top: 1px solid #ddd;
+            padding-top: 10px;
+        }
+        .chart-container {
+            margin: 20px 0;
+            padding: 10px;
+        }
+        .row {
+            display: flex;
+            flex-wrap: wrap;
+            margin-right: -15px;
+            margin-left: -15px;
+            box-sizing: border-box;
+        }
+        .col-md-6 {
+            flex: 0 0 50%;
+            max-width: 50%;
+            position: relative;
+            width: 100%;
+            padding-right: 15px;
+            padding-left: 15px;
+            box-sizing: border-box;
+        }
+        .pie-slice {
+            display: inline-block;
+            width: 15px;
+            height: 15px;
+            margin-right: 5px;
+            border-radius: 50%;
+        }
+        .pie-chart-legend {
+            margin-top: 10px;
+            font-size: 10px;
+        }
+        .pie-chart-legend-item {
+            margin-bottom: 5px;
+        }
+        .bar-chart {
+            width: 100%;
+        }
+        .bar-chart-bar {
+            height: 20px;
+            background-color: #007bff;
+            margin-bottom: 8px;
+            position: relative;
+        }
+        .bar-chart-label {
+            font-size: 10px;
+            margin-bottom: 2px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        .bar-chart-value {
+            position: absolute;
+            right: 5px;
+            color: #fff;
+            font-size: 9px;
+            line-height: 20px;
+        }
+        .blue-bar {
+            background-color: #54b2eb;
+        }
+        .green-bar {
+            background-color: #28a745;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>Expense Report</h1>
+        <p>Generated on {{ current_date }}</p>
+    </div>
+    
+    <div class="meta-info">
+        <p><strong>User:</strong> {{ user.username }}</p>
+        <p><strong>Time Period:</strong>
+            {% if time_period == 'current_month' %}
+                Current Month
+            {% elif time_period == 'last_month' %}
+                Last Month
+            {% else %}
+                All Time
+            {% endif %}
+        </p>
+        <p><strong>Total Expenses:</strong> ₹{{ total_amount }}</p>
+        {% if budget %}
+        <p><strong>Monthly Budget:</strong> ₹{{ budget }}</p>
+        {% endif %}
+    </div>
+    
+    <!-- Statistics -->
+    <div class="section">
+        <div class="section-title">Summary Statistics</div>
+        <div class="summary-box">
+            <div class="summary-item">
+                <span class="summary-label">Total Expenses:</span> ₹{{ statistics.sum_expense }}
+            </div>
+            <div class="summary-item">
+                <span class="summary-label">Largest Expense:</span> ₹{{ statistics.max_expense.amount }} ({{ statistics.max_expense.content }})
+            </div>
+            <div class="summary-item">
+                <span class="summary-label">Smallest Expense:</span> ₹{{ statistics.min_expense.amount }} ({{ statistics.min_expense.content }})
+            </div>
+            <div class="summary-item">
+                <span class="summary-label">Daily Average:</span> ₹{{ statistics.daily_expense_average }}
+            </div>
+            <div class="summary-item">
+                <span class="summary-label">Monthly Average:</span> ₹{{ statistics.monthly_expense_average }}
+            </div>
+            <div class="summary-item">
+                <span class="summary-label">Largest Category:</span> {{ statistics.biggest_category_expenditure.category }} (₹{{ statistics.biggest_category_expenditure.amount }})
+            </div>
+            <div class="summary-item">
+                <span class="summary-label">Current Month vs Last Month:</span> 
+                {{ statistics.monthly_percentage_diff }}%
+            </div>
+        </div>
+    </div>
+    
+    <!-- Monthly and Weekly Expenses Bar Charts -->
+    <div class="section">
+        <div class="section-title">Monthly and Weekly Expenses</div>
+        <div class="row">
+            <!-- Monthly Expenses Bar Chart -->
+            <div class="col-md-6">
+                <h4 style="font-size: 14px; text-align: center;">Expense Amounts by Month</h4>
+                <div class="bar-chart">
+                    {% for month, amount in expenses_by_month_data.items %}
+                    {% if amount > 0 %}
+                    {% with width_percent=amount|divided_by:statistics.sum_expense|times:100|floatformat:0 %}
+                    <div class="bar-chart-label">{{ month }}</div>
+                    <div class="bar-chart-bar blue-bar" style="width: {{ width_percent }}%;">
+                        <span class="bar-chart-value">₹{{ amount }}</span>
+                    </div>
+                    {% endwith %}
+                    {% endif %}
+                    {% endfor %}
+                </div>
+            </div>
+            
+            <!-- Weekly Expenses Bar Chart -->
+            <div class="col-md-6">
+                <h4 style="font-size: 14px; text-align: center;">Expense Amounts by Week</h4>
+                <div class="bar-chart">
+                    {% for week, amount in expenses_by_week_data.items %}
+                    {% if amount > 0 %}
+                    {% with width_percent=amount|divided_by:statistics.sum_expense|times:100|floatformat:0 %}
+                    <div class="bar-chart-label">{{ week }}</div>
+                    <div class="bar-chart-bar green-bar" style="width: {{ width_percent }}%;">
+                        <span class="bar-chart-value">₹{{ amount }}</span>
+                    </div>
+                    {% endwith %}
+                    {% endif %}
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Pie Charts -->
+    <div class="section">
+        <div class="section-title">Expense Distribution by Category</div>
+        <div class="row">
+            <!-- Total Expenses Pie Chart (Simplified as color-coded list) -->
+            <div class="col-md-6">
+                <h4 style="font-size: 14px; text-align: center;">Total Expenses by Category</h4>
+                <div class="pie-chart-legend">
+                    {% with colors="#db7093,#36a2eb,#ffce56,#7aeb34,#4bc0c0,#00ffff,#ff6384,#a234eb,#eb34d0,#ff4500,#ff69b4,#006400" %}
+                    {% with color_list=colors|split:"," %}
+                    {% for category, amount in total_expenses_pie_data.items %}
+                    {% with percent=amount|divided_by:statistics.sum_expense|times:100|floatformat:1 %}
+                    <div class="pie-chart-legend-item">
+                        <span class="pie-slice" style="background-color: {{ color_list|get_item:forloop.counter0 }}"></span>
+                        {{ category }}: ₹{{ amount }} ({{ percent }}%)
+                    </div>
+                    {% endwith %}
+                    {% endfor %}
+                    {% endwith %}
+                    {% endwith %}
+                </div>
+            </div>
+            
+            <!-- Monthly Expenses Pie Chart -->
+            <div class="col-md-6">
+                <h4 style="font-size: 14px; text-align: center;">Current Month Expenses by Category</h4>
+                <div class="pie-chart-legend">
+                    {% with colors="#db7093,#36a2eb,#ffce56,#7aeb34,#4bc0c0,#00ffff,#ff6384,#a234eb,#eb34d0,#ff4500,#ff69b4,#006400" %}
+                    {% with color_list=colors|split:"," %}
+                    {% for category, amount in monthly_expenses_pie_data.items %}
+                    {% with percent=amount|divided_by:statistics.curr_month_expense_sum|times:100|floatformat:1 %}
+                    <div class="pie-chart-legend-item">
+                        <span class="pie-slice" style="background-color: {{ color_list|get_item:forloop.counter0 }}"></span>
+                        {{ category }}: ₹{{ amount }} ({{ percent }}%)
+                    </div>
+                    {% endwith %}
+                    {% endfor %}
+                    {% endwith %}
+                    {% endwith %}
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Individual Expenses -->
+    <div class="section">
+        <div class="section-title">Expense Details ({{ expenses|length }} items)</div>
+        <table>
+            <thead>
+                <tr>
+                    <th width="20%">Date</th>
+                    <th width="15%">Amount</th>
+                    <th width="25%">Description</th>
+                    <th width="20%">Category</th>
+                    <th width="20%">Source</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for expense in expenses %}
+                <tr>
+                    <td>{{ expense.date|date:"Y-m-d" }}</td>
+                    <td>₹{{ expense.amount }}</td>
+                    <td>{{ expense.content }}</td>
+                    <td>{{ expense.category }}</td>
+                    <td>{{ expense.source }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    
+    <div class="footer">
+        <p>This report was generated by Expense Tracker Application</p>
+    </div>
+</body>
+</html> 

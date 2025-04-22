@@ -1,0 +1,169 @@
+{% extends 'base.html' %}
+{% load socialaccount %}
+
+{% block content %}
+<style>
+  label.form-label {
+    font-weight: 600;
+    color: #333;
+    margin-bottom: 6px;
+    display: block;
+    font-size: 15px;
+  }
+
+  .form-control {
+    border-radius: 8px;
+    border: 1px solid #ccc;
+    padding: 10px;
+    font-size: 14px;
+    transition: border-color 0.3s, box-shadow 0.3s;
+  }
+
+  .form-control:focus {
+    border-color: #007bff;
+    box-shadow: 0 0 5px rgba(0, 123, 255, 0.2);
+    outline: none;
+  }
+
+  .form-text {
+    font-size: 13px;
+    color: #6c757d;
+  }
+
+  .text-danger {
+    font-size: 13px;
+    color: #dc3545;
+  }
+
+  .btn-primary, .btn-danger {
+    border-radius: 8px;
+    font-weight: 500;
+  }
+
+  .card {
+    background-color: #ffffff;
+    border: none;
+  }
+
+  /* Heading - Create Account */
+  .form-heading {
+    font-size: 28px;
+    font-weight: 700;
+    color: #212529;
+    margin-bottom: 24px;
+    text-align: center;
+  }
+
+  /* Login Redirect Text */
+  .redirect-text {
+    text-align: center;
+    margin-top: 20px;
+    font-size: 15px;
+    color: #555;
+  }
+
+  .redirect-text a {
+    color: #007bff;
+    font-weight: 500;
+    text-decoration: none;
+  }
+
+  .redirect-text a:hover {
+    text-decoration: underline;
+  }
+</style>
+
+<div class="container mt-5">
+  <div class="row justify-content-center">
+    <div class="col-md-6">
+
+      <div class="card p-4 shadow rounded-3">
+        <div class="form-heading">Create Account</div>
+
+        <!-- Google OAuth Button -->
+        <div class="text-center mb-3">
+          <a href="{% provider_login_url 'google' %}" class="btn btn-danger w-100" data-test="google-oauth">
+            <i class="fab fa-google me-2"></i> Sign up with Google
+          </a>
+        </div>
+
+        <hr class="mb-4">
+
+        <form method="post" action="{% url 'accounts:signup' %}">
+          {% csrf_token %}
+
+          <!-- Username -->
+          <div class="mb-3">
+            <label for="id_username" class="form-label">Username</label>
+            <input
+              type="text"
+              name="username"
+              id="id_username"
+              class="form-control"
+              maxlength="150"
+              required
+              data-test="username"
+            />
+            <div class="form-text">
+              Letters, digits and @/./+/-/_ only. Max 150 characters.
+            </div>
+          </div>
+
+          <!-- Password -->
+          <div class="mb-3">
+            <label for="id_password1" class="form-label">Password</label>
+            <input
+              type="password"
+              name="password1"
+              id="id_password1"
+              class="form-control"
+              required
+              data-test="password1"
+            />
+          </div>
+
+          <!-- Password Confirmation -->
+          <div class="mb-3">
+            <label for="id_password2" class="form-label">Confirm Password</label>
+            <input
+              type="password"
+              name="password2"
+              id="id_password2"
+              class="form-control"
+              required
+              data-test="password2"
+            />
+          </div>
+
+          <!-- Password Rules -->
+          <div class="alert alert-info small">
+            <ul class="mb-0">
+              <li>Password must be at least 8 characters.</li>
+              <li>Should not be too similar to personal info.</li>
+              <li>Should not be entirely numeric or too common.</li>
+            </ul>
+          </div>
+
+          {% if errors %}
+          <div class="alert alert-danger" data-test="error-labels">
+            <ul class="mb-0">
+              {% for error in errors %}
+                <li>{{ error }}</li>
+              {% endfor %}
+            </ul>
+          </div>
+          {% endif %}
+
+          <button type="submit" class="btn btn-primary w-100" data-test="signup">Sign Up</button>
+          <input type="hidden" name="text" value="{% url 'expenses:home' %}" />
+        </form>
+
+        <p class="redirect-text">
+          Already have an account? <a href="{% url 'account_login' %}">Log in</a>
+        </p>
+      </div>
+
+    </div>
+  </div>
+</div>
+{% endblock %}

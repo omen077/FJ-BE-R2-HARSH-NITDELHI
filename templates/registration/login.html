@@ -1,0 +1,128 @@
+{% extends 'base.html' %}
+{% load socialaccount %}
+
+{% block content %}
+<style>
+  label.form-label {
+    font-weight: 600;
+    color: #333;
+    margin-bottom: 6px;
+    display: block;
+    font-size: 15px;
+  }
+
+  .form-control {
+    border-radius: 8px;
+    border: 1px solid #ccc;
+    padding: 10px;
+    font-size: 14px;
+    transition: border-color 0.3s, box-shadow 0.3s;
+  }
+
+  .form-control:focus {
+    border-color: #007bff;
+    box-shadow: 0 0 5px rgba(0, 123, 255, 0.2);
+    outline: none;
+  }
+
+  .btn-primary, .btn-danger {
+    border-radius: 8px;
+    font-weight: 500;
+  }
+
+  .card {
+    background-color: #ffffff;
+    border: none;
+  }
+
+  .form-heading {
+    font-size: 28px;
+    font-weight: 700;
+    color: #212529;
+    margin-bottom: 24px;
+    text-align: center;
+  }
+
+  .error-message {
+    color: #dc3545;
+    font-size: 14px;
+    text-align: center;
+    margin-bottom: 15px;
+  }
+
+  .redirect-text {
+    text-align: center;
+    margin-top: 20px;
+    font-size: 15px;
+    color: #555;
+  }
+
+  .redirect-text a {
+    color: #007bff;
+    font-weight: 500;
+    text-decoration: none;
+  }
+
+  .redirect-text a:hover {
+    text-decoration: underline;
+  }
+</style>
+
+<div class="container mt-5">
+  <div class="row justify-content-center">
+    <div class="col-md-6">
+      <div class="card p-4 shadow rounded-3">
+        <div class="form-heading">Log In</div>
+
+        {% if form.errors %}
+          <div class="error-message">Your username and password didn’t match. Please try again.</div>
+        {% endif %}
+
+        <form method="post" action="{% url 'account_login' %}" data-test="login-form">
+          {% csrf_token %}
+
+          <!-- Username -->
+          <div class="mb-3">
+            <label for="id_username" class="form-label">Username</label>
+            <input
+              type="text"
+              name="username"
+              id="id_username"
+              class="form-control"
+              data-test="username"
+              required
+            />
+          </div>
+
+          <!-- Password -->
+          <div class="mb-3">
+            <label for="id_password" class="form-label">Password</label>
+            <input
+              type="password"
+              name="password"
+              id="id_password"
+              class="form-control"
+              data-test="password"
+              required
+            />
+          </div>
+
+          <!-- Submit -->
+          <button type="submit" name="submit" class="btn btn-primary w-100" data-test="login">Log In</button>
+
+          <!-- Google Login Button -->
+          <a href="{% provider_login_url 'google' %}" class="btn btn-danger w-100 mt-3">
+            <i class="fab fa-google me-2"></i> Login with Google
+          </a>
+
+          <input type="hidden" name="text" value="{% url 'expenses:home' %}" />
+        </form>
+
+        <p class="redirect-text">
+          Don't have an account? <a href="{% url 'accounts:signup' %}">Sign Up</a>
+        </p>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

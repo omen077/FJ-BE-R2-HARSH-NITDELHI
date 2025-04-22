@@ -1,0 +1,524 @@
+{% load static %}
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1, shrink-to-fit=no"
+    />
+
+    <link
+      rel="stylesheet"
+      href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css"
+      integrity="sha384-ggOyR0iXCbMQv3Xipma34MD+dH/1fQ784/j6cY/iJTQUOhcWr7x9JvoRxT2MZw1T"
+      crossorigin="anonymous"
+    />
+
+    <script
+      src="https://code.jquery.com/jquery-3.5.1.min.js"
+      integrity="sha256-9/aliU8dGd2tb6OSsuzixeV4y/faTqgFtohetphbbj0="
+      crossorigin="anonymous"
+    ></script>
+
+    <script
+      src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.14.3/umd/popper.min.js"
+      crossorigin="anonymous"
+    ></script>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@4.3.1/dist/js/bootstrap.min.js" 
+      integrity="sha384-JjSmVgyd0p3pXB1rRibZUAYoIIy6OrQ6VrjIEaFf/nJGzIxFDsf4x0xIM+B07jRM" 
+      crossorigin="anonymous"></script>
+
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@2.9.3/dist/Chart.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/chartjs-plugin-annotation/0.5.7/chartjs-plugin-annotation.min.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css">
+
+    <link rel="stylesheet" type="text/css" href="{% static 'expenses/style.css' %}">
+    <script type="text/javascript" src="{% static 'js/app.js' %}"></script>
+
+    <title>{% block title %}Expense Tracker{% endblock title %}</title>
+  </head>
+
+  <body>
+    <!-- Navbar -->
+    <nav id="navbar" class="navbar navbar-expand-lg navbar-light bg-light shadow-sm">
+      <a class="navbar-brand font-weight-bold d-flex align-items-center" href="{% url 'expenses:home' %}">
+        <i class="fas fa-wallet text-primary me-2"></i>
+        <span>Expense Tracker</span>
+      </a>
+      
+      <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarContent" aria-controls="navbarContent" aria-expanded="false" aria-label="Toggle navigation">
+        <span class="navbar-toggler-icon"></span>
+      </button>
+
+      <div class="collapse navbar-collapse justify-content-between" id="navbarContent">
+        <ul class="navbar-nav">
+          <li class="nav-item {% if request.path == '/' %}active{% endif %}">
+            <a class="nav-link px-3" href="{% url 'expenses:home' %}" title="Home">
+              <i class="fas fa-home"></i>
+            </a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link px-3" href="{% url 'expenses:charts' %}" title="Charts & Statistics">
+              <i class="fas fa-chart-pie"></i>
+            </a>
+          </li>
+          {% if user.is_authenticated %}
+          <li class="nav-item">
+            <a class="nav-link px-3" href="{% url 'expenses:import_data' %}" title="Import Data">
+              <i class="fas fa-file-import"></i>
+            </a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link px-3" href="{% url 'expenses:export_data' %}" title="Export Data">
+              <i class="fas fa-file-export"></i>
+            </a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link px-3" href="{% url 'expenses:receipt_list' %}" title="Receipts">
+              <i class="fas fa-receipt"></i>
+            </a>
+          </li>
+          {% endif %}
+        </ul>
+
+        <!-- Right side: Auth links -->
+        <ul class="navbar-nav">
+          {% if user.is_authenticated %}
+          <!-- Notifications -->
+          <li class="nav-item">
+            <a class="nav-link position-relative notification-link" href="{% url 'expenses:user_notifications' %}" title="Notifications">
+              <div class="notification-icon-container">
+                <i class="fas fa-bell notification-icon"></i>
+                {% if notification_unread_count > 0 %}
+                <span class="badge badge-danger badge-pill notification-badge">{{ notification_unread_count }}</span>
+                {% endif %}
+              </div>
+            </a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link px-3" href="{% url 'accounts:logout' %}" title="Log Out">
+              <i class="fas fa-sign-out-alt"></i>
+            </a>
+          </li>
+          {% else %}
+          <li class="nav-item">
+            <a class="nav-link px-3" href="{% url 'accounts:signup' %}" title="Sign Up">
+              <i class="fas fa-user-plus"></i>
+            </a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link px-3" href="{% url 'accounts:login' %}" title="Log In">
+              <i class="fas fa-sign-in-alt"></i>
+            </a>
+          </li>
+          {% endif %}
+        </ul>
+      </div>
+    </nav>
+
+    <!-- Content -->
+    <div class="container mt-4" data-test="container">
+      {% block content %} {% endblock content %}
+    </div>
+
+    {% if user.is_authenticated %}
+    <!-- Floating Chat Button -->
+    <div id="chat-button" class="chat-button">
+      <button id="chat-toggle" class="btn btn-primary rounded-circle">
+        <i id="chat-icon" class="fas fa-comment"></i>
+      </button>
+    </div>
+
+    <!-- Chat Widget -->
+    <div id="chat-widget" class="chat-widget">
+      <div class="chat-header">
+        <h5 class="m-0">Expense Assistant</h5>
+        <div>
+          <a href="{% url 'chatbot:documentation' %}" class="btn btn-sm text-white" title="Help">
+            <i class="fas fa-question-circle"></i>
+          </a>
+          <button id="chat-close" class="btn btn-sm text-white" title="Close">
+            <i class="fas fa-times"></i>
+          </button>
+        </div>
+      </div>
+      <div id="mini-chat-history" class="mini-chat-history">
+        <div class="system-message">
+          <div class="message-content">Hi there! How can I help with your expenses today?</div>
+        </div>
+      </div>
+      <div class="mini-chat-input">
+        <form id="mini-message-form" class="d-flex">
+          <input type="text" id="mini-user-message" class="form-control mr-2" placeholder="Type your message..." required>
+          <button type="submit" class="btn btn-primary btn-sm">
+            <i class="fas fa-paper-plane"></i>
+          </button>
+        </form>
+      </div>
+      <div class="chat-footer">
+        <a href="{% url 'chatbot:chat_history' %}" class="btn btn-link btn-sm text-white">Open Full Chat</a>
+      </div>
+    </div>
+    {% endif %}
+
+    <style>
+      .position-relative {
+        position: relative;
+      }
+      
+      /* Enhanced notification bell styling */
+      .notification-icon-container {
+        position: relative;
+        display: inline-block;
+        width: 24px;
+        height: 24px;
+        text-align: center;
+      }
+      
+      .notification-icon {
+        color: #343a40;
+        font-size: 1.2rem;
+        transition: color 0.2s ease;
+        display: inline-block;
+      }
+      
+      .notification-link {
+        padding: 0.5rem 1rem;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+      
+      .notification-link:hover .notification-icon {
+        color: #007bff;
+      }
+      
+      .notification-badge {
+        position: absolute;
+        top: -5px;
+        right: -5px;
+        font-size: 0.6rem;
+        padding: 0.25em 0.6em;
+        background-color: #dc3545;
+        color: white;
+      }
+      
+      .badge {
+        display: inline-block;
+        padding: 0.25em 0.6em;
+        font-size: 0.75rem;
+        font-weight: 700;
+        line-height: 1;
+        text-align: center;
+        white-space: nowrap;
+        vertical-align: baseline;
+        border-radius: 10rem;
+      }
+      
+      .badge-danger {
+        color: #fff;
+        background-color: #dc3545;
+      }
+      
+      .badge-primary {
+        color: #fff;
+        background-color: #007bff;
+      }
+      
+      .badge-pill {
+        padding-right: 0.6em;
+        padding-left: 0.6em;
+        border-radius: 10rem;
+      }
+      
+      /* Enhanced navbar styling */
+      #navbar {
+        border-bottom: 1px solid rgba(0,0,0,0.05);
+        padding: 0.5rem 1rem;
+      }
+      
+      #navbar .nav-link {
+        transition: all 0.2s ease;
+        border-radius: 50%;
+        width: 40px;
+        height: 40px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin: 0 2px;
+      }
+      
+      #navbar .nav-link:hover {
+        background-color: rgba(0, 123, 255, 0.1);
+        transform: translateY(-2px);
+      }
+      
+      #navbar .nav-item.active .nav-link {
+        background-color: rgba(0, 123, 255, 0.15);
+        color: #007bff;
+      }
+      
+      #navbar .navbar-brand {
+        font-size: 1.2rem;
+        padding: 0;
+      }
+      
+      @media (max-width: 991px) {
+        #navbar .navbar-collapse {
+          background-color: #f8f9fa;
+          padding: 1rem;
+          border-radius: 0.5rem;
+          margin-top: 0.5rem;
+          box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
+        }
+        
+        #navbar .nav-link {
+          width: auto;
+          height: auto;
+          border-radius: 0.25rem;
+          padding: 0.5rem 1rem;
+          display: flex;
+          align-items: center;
+          justify-content: flex-start;
+          margin: 0.25rem 0;
+        }
+        
+        #navbar .nav-link i {
+          margin-right: 0.5rem;
+        }
+      }
+      
+      /* Chatbot Styling */
+      .chat-button {
+        position: fixed;
+        bottom: 30px;
+        right: 30px;
+        z-index: 1000;
+      }
+
+      .chat-button button {
+        width: 60px;
+        height: 60px;
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+      }
+
+      .chat-widget {
+        display: none;
+        position: fixed;
+        bottom: 100px;
+        right: 30px;
+        width: 350px;
+        height: 450px;
+        background-color: white;
+        border-radius: 10px;
+        box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+        z-index: 1000;
+        overflow: hidden;
+        display: flex;
+        flex-direction: column;
+      }
+
+      .chat-header {
+        background-color: #007bff;
+        color: white;
+        padding: 10px 15px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+      }
+
+      .mini-chat-history {
+        flex-grow: 1;
+        padding: 15px;
+        overflow-y: auto;
+        background-color: #f8f9fa;
+      }
+
+      .mini-chat-input {
+        padding: 10px;
+        border-top: 1px solid #dee2e6;
+      }
+
+      .chat-footer {
+        background-color: #007bff;
+        padding: 5px;
+        text-align: center;
+      }
+
+      /* Message styling (same as in chat.html) */
+      .message {
+        margin-bottom: 15px;
+        padding: 10px 15px;
+        border-radius: 10px;
+        max-width: 80%;
+        position: relative;
+      }
+      
+      .user-message {
+        background-color: #e3f2fd;
+        margin-left: auto;
+        border-bottom-right-radius: 0;
+      }
+      
+      .system-message {
+        background-color: #f1f1f1;
+        margin-right: auto;
+        border-bottom-left-radius: 0;
+      }
+      
+      .message-content {
+        word-wrap: break-word;
+      }
+      
+      .message-timestamp {
+        font-size: 0.75rem;
+        text-align: right;
+        margin-top: 5px;
+      }
+    </style>
+    
+    <script>
+      $(document).ready(function() {
+        // Force update the bell icon's styling on page load
+        $('.fa-bell').css('visibility', 'visible');
+
+        // Chat widget functionality
+        const chatWidget = $('#chat-widget');
+        const chatButton = $('#chat-toggle');
+        const chatIcon = $('#chat-icon');
+        const closeButton = $('#chat-close');
+        const miniChatHistory = $('#mini-chat-history');
+        const miniMessageForm = $('#mini-message-form');
+        const miniUserMessageInput = $('#mini-user-message');
+
+        // Conversation context that persists between messages
+        let conversationContext = {};
+        // Flag to track if we're waiting for confirmation
+        let awaitingConfirmation = false;
+
+        // Initially hide the chat widget
+        chatWidget.hide();
+
+        // Toggle chat widget
+        chatButton.on('click', function() {
+          if (chatWidget.is(':visible')) {
+            chatWidget.hide();
+            chatIcon.removeClass('fa-times').addClass('fa-comment');
+          } else {
+            chatWidget.show();
+            chatIcon.removeClass('fa-comment').addClass('fa-times');
+            scrollToBottom();
+          }
+        });
+
+        // Close chat widget
+        closeButton.on('click', function() {
+          chatWidget.hide();
+          chatIcon.removeClass('fa-times').addClass('fa-comment');
+        });
+
+        // Scroll to bottom of chat history
+        function scrollToBottom() {
+          miniChatHistory.scrollTop(miniChatHistory.prop('scrollHeight'));
+        }
+
+        // Add a new message to the chat history
+        function addMessage(content, isUser, timestamp) {
+          const messageDiv = $('<div>').addClass(isUser ? 'message user-message' : 'message system-message');
+          const contentDiv = $('<div>').addClass('message-content').text(content);
+          const timestampDiv = $('<div>').addClass('message-timestamp small text-muted').text(timestamp || new Date().toLocaleString());
+          
+          messageDiv.append(contentDiv).append(timestampDiv);
+          miniChatHistory.append(messageDiv);
+          scrollToBottom();
+        }
+
+        // Handle mini form submission
+        miniMessageForm.on('submit', function(e) {
+          e.preventDefault();
+          
+          const message = miniUserMessageInput.val().trim();
+          if (!message) return;
+          
+          // Clear input
+          miniUserMessageInput.val('');
+          
+          // Add user message to UI immediately
+          addMessage(message, true);
+          
+          // Send message to server
+          fetch('{% url "chatbot:process_message" %}', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'X-CSRFToken': getCookie('csrftoken')
+            },
+            body: JSON.stringify({ 
+              message: message,
+              context: conversationContext,
+              awaiting_confirmation: awaitingConfirmation
+            })
+          })
+          .then(response => response.json())
+          .then(data => {
+            if (data.error) {
+              console.error('Error:', data.error);
+              addMessage('Sorry, there was an error processing your request.', false);
+              // Reset context if there's an error
+              conversationContext = {};
+              awaitingConfirmation = false;
+            } else {
+              addMessage(data.message, false, data.timestamp);
+              
+              // Update conversation context if provided
+              if (data.context) {
+                conversationContext = data.context;
+              } else {
+                // Clear context if none is provided
+                conversationContext = {};
+              }
+              
+              // Update confirmation state
+              awaitingConfirmation = data.requires_confirmation || false;
+            }
+          })
+          .catch(error => {
+            console.error('Error:', error);
+            addMessage('Sorry, there was an error communicating with the server.', false);
+            // Reset context on error
+            conversationContext = {};
+            awaitingConfirmation = false;
+          });
+        });
+
+        // Function to get CSRF token
+        function getCookie(name) {
+          let cookieValue = null;
+          if (document.cookie && document.cookie !== '') {
+            const cookies = document.cookie.split(';');
+            for (let i = 0; i < cookies.length; i++) {
+              const cookie = cookies[i].trim();
+              if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                break;
+              }
+            }
+          }
+          return cookieValue;
+        }
+      });
+    </script>
+
+    <!-- Initialize Bootstrap tooltips -->
+    <script>
+      document.addEventListener('DOMContentLoaded', function() {
+        var tooltipTriggerList = [].slice.call(document.querySelectorAll('[title]'));
+        var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
+          return new bootstrap.Tooltip(tooltipTriggerEl);
+        });
+      });
+    </script>
+  </body>
+</html>

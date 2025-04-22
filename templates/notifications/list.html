@@ -1,0 +1,311 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Notifications | Expense Tracker{% endblock title %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="d-flex justify-content-between align-items-center">
+            <h1 class="display-4">
+                <i class="fas fa-bell"></i> Notifications
+                {% if unread_count > 0 %}
+                <span class="badge badge-pill badge-danger">{{ unread_count }}</span>
+                {% endif %}
+            </h1>
+            {% if notifications %}
+            <a href="{% url 'expenses:mark_all_notifications_as_read' %}" class="btn btn-outline-primary">
+                Mark All as Read
+            </a>
+            {% endif %}
+        </div>
+        <hr>
+    </div>
+</div>
+
+{% if notifications %}
+<div class="row">
+    <div class="col-12">
+        <div class="notification-list">
+            {% for notification in notifications %}
+            <div class="card mb-3 notification-card {% if not notification.is_read %}notification-unread{% endif %}" 
+                 data-notification-id="{{ notification.id }}">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <h5 class="card-title mb-1">
+                            {% if not notification.is_read %}
+                            <span class="badge badge-pill badge-primary mr-2">New</span>
+                            {% endif %}
+                            <a href="{% url 'expenses:notification_detail' notification.id %}" class="notification-title-link">
+                                {{ notification.title }}
+                            </a>
+                        </h5>
+                        <small class="text-muted">{{ notification.created_at|date:"M d, Y" }} at {{ notification.created_at|time:"H:i" }}</small>
+                    </div>
+                    <p class="card-text mt-2">{{ notification.message|truncatechars:100 }}</p>
+                    <div class="text-right">
+                        <a href="{% url 'expenses:notification_detail' notification.id %}" class="btn btn-sm btn-primary view-details-btn">
+                            <i class="fas fa-eye mr-1"></i> View Details
+                        </a>
+                        {% if not notification.is_read %}
+                        <a href="{% url 'expenses:mark_notification_as_read' notification.id %}" 
+                           class="btn btn-sm btn-outline-secondary mark-as-read ml-2">
+                            Mark as Read
+                        </a>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+
+        {% if num_pages > 1 %}
+        <nav aria-label="Notifications pagination">
+            <ul class="pagination justify-content-center">
+                {% if notifications.has_previous %}
+                <li class="page-item">
+                    <a class="page-link" href="?page=1" aria-label="First">
+                        <span aria-hidden="true">&laquo;&laquo;</span>
+                    </a>
+                </li>
+                <li class="page-item">
+                    <a class="page-link" href="?page={{ notifications.previous_page_number }}" aria-label="Previous">
+                        <span aria-hidden="true">&laquo;</span>
+                    </a>
+                </li>
+                {% endif %}
+                
+                {% for page_num in notifications.paginator.page_range %}
+                    {% if notifications.number == page_num %}
+                    <li class="page-item active">
+                        <span class="page-link">
+                            {{ page_num }}
+                            <span class="sr-only">(current)</span>
+                        </span>
+                    </li>
+                    {% elif page_num > notifications.number|add:'-3' and page_num < notifications.number|add:'3' %}
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ page_num }}">{{ page_num }}</a>
+                    </li>
+                    {% endif %}
+                {% endfor %}
+                
+                {% if notifications.has_next %}
+                <li class="page-item">
+                    <a class="page-link" href="?page={{ notifications.next_page_number }}" aria-label="Next">
+                        <span aria-hidden="true">&raquo;</span>
+                    </a>
+                </li>
+                <li class="page-item">
+                    <a class="page-link" href="?page={{ notifications.paginator.num_pages }}" aria-label="Last">
+                        <span aria-hidden="true">&raquo;&raquo;</span>
+                    </a>
+                </li>
+                {% endif %}
+            </ul>
+        </nav>
+        {% endif %}
+    </div>
+</div>
+{% else %}
+<div class="row">
+    <div class="col-12 text-center">
+        <div class="p-5 bg-light rounded">
+            <div class="mb-4">
+                <i class="fas fa-bell-slash fa-4x text-muted"></i>
+            </div>
+            <h3 class="text-muted">No notifications yet</h3>
+            <p class="lead text-muted">
+                You'll receive notifications about your expenses and budget here.
+            </p>
+            <a href="{% url 'expenses:home' %}" class="btn btn-primary mt-3">
+                Back to Dashboard
+            </a>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+<style>
+    .notification-card {
+        transition: all 0.3s ease;
+        border-left: 5px solid transparent;
+    }
+    
+    .notification-unread {
+        border-left-color: #007bff;
+        background-color: rgba(0, 123, 255, 0.05);
+    }
+    
+    .notification-card:hover {
+        box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+        transform: translateY(-2px);
+    }
+
+    .notification-title-link {
+        color: #343a40;
+        text-decoration: none;
+    }
+    
+    .notification-title-link:hover {
+        color: #007bff;
+        text-decoration: none;
+    }
+    
+    /* Enhanced button styling */
+    .btn {
+        font-weight: 500;
+        border-radius: 4px;
+        padding: 0.375rem 0.75rem;
+        display: inline-block;
+        text-align: center;
+        vertical-align: middle;
+        cursor: pointer;
+    }
+    
+    .btn-primary {
+        background-color: #007bff;
+        border-color: #007bff;
+        color: white !important;
+    }
+    
+    .btn-primary:hover {
+        background-color: #0069d9;
+        border-color: #0062cc;
+    }
+    
+    .btn-outline-primary {
+        color: #007bff !important;
+        border-color: #007bff;
+        background-color: transparent;
+    }
+    
+    .btn-outline-primary:hover {
+        color: #fff !important;
+        background-color: #007bff;
+        border-color: #007bff;
+    }
+    
+    .btn-outline-secondary {
+        color: #6c757d !important;
+        border-color: #6c757d;
+        background-color: transparent;
+    }
+    
+    .btn-outline-secondary:hover {
+        color: #fff !important;
+        background-color: #6c757d;
+        border-color: #6c757d;
+    }
+    
+    .btn-sm {
+        padding: 0.25rem 0.5rem;
+        font-size: 0.875rem;
+        line-height: 1.5;
+    }
+
+    /* View Details button specific styling */
+    .view-details-btn {
+        background-color: #007bff;
+        border-color: #007bff;
+        color: white !important;
+        font-weight: 500;
+        transition: all 0.2s ease;
+        box-shadow: 0 2px 4px rgba(0, 123, 255, 0.2);
+    }
+    
+    .view-details-btn:hover {
+        background-color: #0069d9;
+        border-color: #0062cc;
+        box-shadow: 0 4px 8px rgba(0, 123, 255, 0.3);
+        transform: translateY(-1px);
+    }
+    
+    .view-details-btn .fa-eye {
+        margin-right: 4px;
+    }
+    
+    /* Fix for spacing between buttons */
+    .ml-2 {
+        margin-left: 0.5rem !important;
+    }
+
+    @media (max-width: 767.98px) {
+        .display-4 {
+            font-size: 2.5rem;
+        }
+
+        .notification-card .text-right {
+            text-align: center !important;
+            margin-top: 15px;
+        }
+
+        .notification-card .btn {
+            width: 100%;
+            margin: 5px 0;
+        }
+
+        .notification-card .ml-2 {
+            margin-left: 0 !important;
+        }
+    }
+</style>
+
+<script>
+    $(document).ready(function() {
+        // Add Font Awesome if not already present
+        if ($('link[href*="font-awesome"]').length === 0) {
+            $('head').append('<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css">');
+        }
+        
+        // Handle mark as read via AJAX
+        $('.mark-as-read').on('click', function(e) {
+            e.preventDefault();
+            const url = $(this).attr('href');
+            const card = $(this).closest('.notification-card');
+            
+            $.ajax({
+                url: url,
+                type: 'GET',
+                headers: {'X-Requested-With': 'XMLHttpRequest'},
+                success: function(data) {
+                    if (data.status === 'success') {
+                        card.removeClass('notification-unread');
+                        card.find('.badge-primary').remove();
+                        card.find('.mark-as-read').remove();
+                        
+                        // Update unread count in the title
+                        let badge = $('h1 .badge');
+                        let count = parseInt(badge.text()) - 1;
+                        if (count > 0) {
+                            badge.text(count);
+                        } else {
+                            badge.remove();
+                        }
+                    }
+                }
+            });
+        });
+        
+        // Handle mark all as read via AJAX
+        $('a[href="{% url "expenses:mark_all_notifications_as_read" %}"]').on('click', function(e) {
+            e.preventDefault();
+            const url = $(this).attr('href');
+            
+            $.ajax({
+                url: url,
+                type: 'GET',
+                headers: {'X-Requested-With': 'XMLHttpRequest'},
+                success: function(data) {
+                    if (data.status === 'success') {
+                        $('.notification-unread').removeClass('notification-unread');
+                        $('.badge-primary').remove();
+                        $('.mark-as-read').remove();
+                        $('h1 .badge').remove();
+                    }
+                }
+            });
+        });
+    });
+</script>
+{% endblock content %} 

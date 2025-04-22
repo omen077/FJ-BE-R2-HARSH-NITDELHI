@@ -1,0 +1,169 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Export Data | Expense Tracker{% endblock title %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-12">
+        <h1 class="display-4">
+            <i class="fas fa-file-export"></i> Export Data
+        </h1>
+        <hr>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-8 offset-md-2">
+        <div class="card shadow-sm">
+            <div class="card-body">
+                <h4 class="card-title mb-4">Export Your Expense Data</h4>
+                
+                {% if messages %}
+                <div class="alert alert-danger">
+                    {% for message in messages %}
+                    <p class="mb-0">{{ message }}</p>
+                    {% endfor %}
+                </div>
+                {% endif %}
+                
+                <form method="post" action="{% url 'expenses:export_data_file' %}">
+                    {% csrf_token %}
+                    
+                    <div class="form-group mb-4">
+                        <label class="form-label">Select Time Period</label>
+                        <div class="btn-group-toggle" data-toggle="buttons">
+                            <label class="btn btn-outline-primary active">
+                                <input type="radio" name="time_period" value="current_month" checked> Current Month
+                            </label>
+                            <label class="btn btn-outline-primary">
+                                <input type="radio" name="time_period" value="last_month"> Last Month
+                            </label>
+                            <label class="btn btn-outline-primary">
+                                <input type="radio" name="time_period" value="all_time"> All Time
+                            </label>
+                        </div>
+                    </div>
+                    
+                    <div class="form-group mb-4">
+                        <label class="form-label">Select Export Format</label>
+                        <div class="row">
+                            <div class="col-md-4 mb-3">
+                                <div class="card export-option">
+                                    <div class="card-body text-center">
+                                        <input type="radio" name="export_format" value="csv" id="csv-option" class="d-none">
+                                        <label for="csv-option" class="d-block">
+                                            <i class="fas fa-file-csv fa-3x mb-3 text-success"></i>
+                                            <h5>CSV</h5>
+                                            <p class="text-muted small">Comma-separated values for spreadsheets</p>
+                                        </label>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-4 mb-3">
+                                <div class="card export-option">
+                                    <div class="card-body text-center">
+                                        <input type="radio" name="export_format" value="json" id="json-option" class="d-none">
+                                        <label for="json-option" class="d-block">
+                                            <i class="fas fa-file-code fa-3x mb-3 text-primary"></i>
+                                            <h5>JSON</h5>
+                                            <p class="text-muted small">Structured data for developers</p>
+                                        </label>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-4 mb-3">
+                                <div class="card export-option">
+                                    <div class="card-body text-center">
+                                        <input type="radio" name="export_format" value="pdf" id="pdf-option" class="d-none">
+                                        <label for="pdf-option" class="d-block">
+                                            <i class="fas fa-file-pdf fa-3x mb-3 text-danger"></i>
+                                            <h5>PDF</h5>
+                                            <p class="text-muted small">Report with expenses and charts</p>
+                                        </label>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="text-center mt-4">
+                        <button type="submit" class="btn btn-primary btn-lg">
+                            <i class="fas fa-download mr-2"></i> Export Data
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .export-option {
+        cursor: pointer;
+        transition: all 0.3s ease;
+        height: 100%;
+    }
+    
+    .export-option:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 10px 20px rgba(0,0,0,0.1);
+    }
+    
+    input[type="radio"]:checked + label .export-option {
+        border-color: #007bff;
+    }
+    
+    .export-option label {
+        cursor: pointer;
+        display: block;
+        width: 100%;
+        height: 100%;
+    }
+    
+    /* Custom styling for radio button cards */
+    input[type="radio"]:checked + label {
+        font-weight: bold;
+    }
+    
+    input[type="radio"]:checked + .d-block i.fa-file-csv {
+        color: #28a745 !important;
+    }
+    
+    input[type="radio"]:checked + .d-block i.fa-file-code {
+        color: #007bff !important;
+    }
+    
+    input[type="radio"]:checked + .d-block i.fa-file-pdf {
+        color: #dc3545 !important;
+    }
+    
+    .card:has(input[type="radio"]:checked) {
+        border-color: #007bff;
+        box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25);
+    }
+</style>
+
+<script>
+    $(document).ready(function() {
+        // Add Font Awesome if not already present
+        if ($('link[href*="font-awesome"]').length === 0) {
+            $('head').append('<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css">');
+        }
+        
+        // Make entire card clickable for export options
+        $('.export-option').on('click', function() {
+            const radio = $(this).find('input[type="radio"]');
+            radio.prop('checked', true);
+            
+            // Visual feedback
+            $('.export-option').removeClass('border-primary');
+            $(this).addClass('border-primary');
+        });
+        
+        // Set default selection
+        $('#csv-option').prop('checked', true);
+        $('#csv-option').closest('.export-option').addClass('border-primary');
+    });
+</script>
+{% endblock content %} 

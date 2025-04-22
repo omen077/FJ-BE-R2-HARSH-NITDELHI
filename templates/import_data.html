@@ -1,0 +1,112 @@
+{% extends 'base.html' %}
+{% block title %}Import Data{% endblock %}
+{% block content %}
+
+<div class="container">
+  <div class="row justify-content-center">
+    <div class="col-md-8">
+      <div class="card mb-4">
+        <div class="card-header">
+          <h2>Import From File</h2>
+        </div>
+        <div class="card-body">
+          <p>This will import expense data from the expenses/data.json file into your account.</p>
+          
+          <form method="post">
+            {% csrf_token %}
+            <input type="hidden" name="import_type" value="file">
+            <button type="submit" class="btn btn-primary">Import From File</button>
+            <a href="{% url 'expenses:home' %}" class="btn btn-secondary">Cancel</a>
+          </form>
+        </div>
+      </div>
+      
+      <div class="card">
+        <div class="card-header">
+          <h2>Enter Expense Data Directly</h2>
+        </div>
+        <div class="card-body">
+          <p>Enter your expense data in JSON format and click "Import":</p>
+          
+          <div class="alert alert-info">
+            <p>The data should be formatted as follows:</p>
+            <pre>
+{
+  "today": [
+    {"amount": 25.00, "content": "Gym membership", "category": "Utilities", "source": "Gym"}
+  ],
+  "one_week_ago": [
+    {"amount": 16.00, "content": "Bar tab", "category": "Entertainment", "source": "Beach bar"}
+  ]
+}
+            </pre>
+            <p>Available categories:</p>
+            <ul>
+              <li>Food & Groceries</li>
+              <li>Books & Stationery</li>
+              <li>Transportation</li>
+              <li>Entertainment</li>
+              <li>Utilities</li>
+              <li>Miscellaneous</li>
+            </ul>
+          </div>
+          
+          <form method="post">
+            {% csrf_token %}
+            <input type="hidden" name="import_type" value="direct">
+            <div class="form-group">
+              <textarea id="json-data-input" name="json_data" rows="15" class="form-control mb-3" placeholder="Paste your JSON data here..."></textarea>
+            </div>
+            <button type="submit" class="btn btn-primary">Import Data</button>
+            <button type="button" id="fill-sample-btn" class="btn btn-info">Fill with Sample Data</button>
+            <a href="{% url 'expenses:home' %}" class="btn btn-secondary">Cancel</a>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  document.addEventListener('DOMContentLoaded', function() {
+    const sampleData = {
+      "today": [
+        {
+          "amount": 25.00,
+          "content": "Gym membership",
+          "category": "Utilities",
+          "source": "McFit Gym"
+        },
+        {
+          "amount": 9.99,
+          "content": "Streaming subscription",
+          "category": "Entertainment",
+          "source": "Netflix"
+        }
+      ],
+      "one_week_ago": [
+        {
+          "amount": 16.00,
+          "content": "Bar tab",
+          "category": "Entertainment",
+          "source": "Beach bar"
+        }
+      ],
+      "two_weeks_ago": [
+        {
+          "amount": 20.00,
+          "content": "Museum entrance",
+          "category": "Miscellaneous",
+          "source": "Main Square Museum"
+        }
+      ]
+    };
+    
+    document.getElementById('fill-sample-btn').addEventListener('click', function() {
+      const textarea = document.getElementById('json-data-input');
+      textarea.value = JSON.stringify(sampleData, null, 2);
+    });
+  });
+</script>
+
+{% endblock %} 

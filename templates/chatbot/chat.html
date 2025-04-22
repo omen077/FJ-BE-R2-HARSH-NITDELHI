@@ -1,0 +1,277 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="card-title mb-0">Chat with Expense Assistant</h5>
+                <a href="{% url 'chatbot:documentation' %}" class="btn btn-sm btn-outline-primary">
+                    <i class="fas fa-question-circle mr-1"></i> Help
+                </a>
+            </div>
+            <div class="card-body">
+                {% if not GEMINI_ENABLED %}
+                <div class="alert alert-warning" role="alert">
+                    <i class="fas fa-exclamation-triangle mr-2"></i>
+                    <strong>Gemini API Key Not Set:</strong> The chatbot is running in fallback mode. To enable the full AI experience, set the GEMINI_API_KEY environment variable.
+                </div>
+                {% endif %}
+                <div id="chat-history" class="chat-history mb-3">
+                    {% for message in messages %}
+                        <div class="message {% if message.message_type == 'user' %}user-message{% else %}system-message{% endif %}">
+                            <div class="message-content">{{ message.content }}</div>
+                            <div class="message-timestamp small text-muted">{{ message.timestamp|date:"M d, Y H:i" }}</div>
+                        </div>
+                    {% empty %}
+                        <div class="system-message">
+                            <div class="message-content">Hi there! I'm your expense assistant. How can I help you today?</div>
+                        </div>
+                    {% endfor %}
+                </div>
+                <div id="chat-input" class="chat-input">
+                    <form id="message-form" class="d-flex">
+                        <input type="text" id="user-message" class="form-control mr-2" placeholder="Type your message..." required>
+                        <button type="submit" class="btn btn-primary">Send</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .chat-history {
+        max-height: 400px;
+        overflow-y: auto;
+        padding: 10px;
+        background-color: #f8f9fa;
+        border-radius: 5px;
+    }
+    
+    .message {
+        margin-bottom: 15px;
+        padding: 10px 15px;
+        border-radius: 10px;
+        max-width: 80%;
+        position: relative;
+    }
+    
+    .user-message {
+        background-color: #e3f2fd;
+        margin-left: auto;
+        border-bottom-right-radius: 0;
+    }
+    
+    .system-message {
+        background-color: #f1f1f1;
+        margin-right: auto;
+        border-bottom-left-radius: 0;
+    }
+    
+    .message-content {
+        word-wrap: break-word;
+    }
+    
+    .message-timestamp {
+        font-size: 0.75rem;
+        text-align: right;
+        margin-top: 5px;
+    }
+    
+    #user-message {
+        flex-grow: 1;
+    }
+
+    .typing-indicator {
+        display: none;
+        margin-bottom: 15px;
+        background-color: #f1f1f1;
+        padding: 8px 15px;
+        border-radius: 10px;
+        max-width: 80px;
+        margin-right: auto;
+        border-bottom-left-radius: 0;
+    }
+
+    .typing-indicator span {
+        height: 10px;
+        width: 10px;
+        float: left;
+        margin: 0 1px;
+        background-color: #9E9EA1;
+        display: block;
+        border-radius: 50%;
+        opacity: 0.4;
+    }
+
+    .typing-indicator span:nth-of-type(1) {
+        animation: 1s blink infinite 0.3333s;
+    }
+
+    .typing-indicator span:nth-of-type(2) {
+        animation: 1s blink infinite 0.6666s;
+    }
+
+    .typing-indicator span:nth-of-type(3) {
+        animation: 1s blink infinite 0.9999s;
+    }
+
+    @keyframes blink {
+        50% {
+            opacity: 1;
+        }
+    }
+</style>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const messageForm = document.getElementById('message-form');
+        const userMessageInput = document.getElementById('user-message');
+        const chatHistory = document.getElementById('chat-history');
+        
+        // Conversation context that persists between messages
+        let conversationContext = {};
+        // Flag to track if we're waiting for confirmation
+        let awaitingConfirmation = false;
+        
+        // Scroll to bottom of chat history
+        function scrollToBottom() {
+            chatHistory.scrollTop = chatHistory.scrollHeight;
+        }
+        
+        // Add a new message to the chat history
+        function addMessage(content, isUser, timestamp) {
+            const messageDiv = document.createElement('div');
+            messageDiv.className = isUser ? 'message user-message' : 'message system-message';
+            
+            const contentDiv = document.createElement('div');
+            contentDiv.className = 'message-content';
+            contentDiv.textContent = content;
+            
+            const timestampDiv = document.createElement('div');
+            timestampDiv.className = 'message-timestamp small text-muted';
+            timestampDiv.textContent = timestamp || new Date().toLocaleString();
+            
+            messageDiv.appendChild(contentDiv);
+            messageDiv.appendChild(timestampDiv);
+            
+            chatHistory.appendChild(messageDiv);
+            scrollToBottom();
+        }
+
+        // Add typing indicator
+        function showTypingIndicator() {
+            const indicator = document.createElement('div');
+            indicator.className = 'typing-indicator';
+            indicator.id = 'typing-indicator';
+            
+            const dot1 = document.createElement('span');
+            const dot2 = document.createElement('span');
+            const dot3 = document.createElement('span');
+            
+            indicator.appendChild(dot1);
+            indicator.appendChild(dot2);
+            indicator.appendChild(dot3);
+            
+            chatHistory.appendChild(indicator);
+            scrollToBottom();
+        }
+
+        // Remove typing indicator
+        function hideTypingIndicator() {
+            const indicator = document.getElementById('typing-indicator');
+            if (indicator) {
+                indicator.remove();
+            }
+        }
+        
+        // Initialize - scroll to bottom
+        scrollToBottom();
+        
+        // Handle form submission
+        messageForm.addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            const message = userMessageInput.value.trim();
+            if (!message) return;
+            
+            // Clear input
+            userMessageInput.value = '';
+            
+            // Add user message to UI immediately
+            addMessage(message, true);
+            
+            // Show typing indicator
+            showTypingIndicator();
+            
+            // Send message to server
+            fetch('{% url "chatbot:process_message" %}', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': getCookie('csrftoken')
+                },
+                body: JSON.stringify({ 
+                    message: message,
+                    context: conversationContext,
+                    awaiting_confirmation: awaitingConfirmation
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                // Hide typing indicator
+                hideTypingIndicator();
+                
+                if (data.error) {
+                    console.error('Error:', data.error);
+                    addMessage('Sorry, there was an error processing your request.', false);
+                    // Reset context if there's an error
+                    conversationContext = {};
+                    awaitingConfirmation = false;
+                } else {
+                    addMessage(data.message, false, data.timestamp);
+                    
+                    // Update conversation context if provided
+                    if (data.context) {
+                        conversationContext = data.context;
+                    } else {
+                        // Clear context if none is provided
+                        conversationContext = {};
+                    }
+                    
+                    // Update confirmation state
+                    awaitingConfirmation = data.requires_confirmation || false;
+                }
+            })
+            .catch(error => {
+                // Hide typing indicator
+                hideTypingIndicator();
+                
+                console.error('Error:', error);
+                addMessage('Sorry, there was an error communicating with the server.', false);
+                // Reset context on error
+                conversationContext = {};
+                awaitingConfirmation = false;
+            });
+        });
+        
+        // Function to get CSRF token
+        function getCookie(name) {
+            let cookieValue = null;
+            if (document.cookie && document.cookie !== '') {
+                const cookies = document.cookie.split(';');
+                for (let i = 0; i < cookies.length; i++) {
+                    const cookie = cookies[i].trim();
+                    if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                        cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                        break;
+                    }
+                }
+            }
+            return cookieValue;
+        }
+    });
+</script>
+{% endblock content %} 

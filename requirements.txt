@@ -56,7 +56,6 @@ pipenv==2024.4.1
 platformdirs==3.9.1
 proto-plus==1.26.1
 protobuf==4.25.6
-psycopg2==2.9.6
 psycopg2-binary==2.9.10
 pyasn1==0.6.1
 pyasn1_modules==0.4.2

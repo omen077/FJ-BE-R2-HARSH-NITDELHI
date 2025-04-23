@@ -37,10 +37,7 @@ DEBUG = os.environ.get("DEBUG", "False").lower() == "true"
 
 
 ALLOWED_HOSTS = [
-    "192.168.1.44",
-    "127.0.0.1",
-    "expense-tracker16.herokuapp.com",
-    "localhost",
+    '*'
 ]
 
 # Application definition
